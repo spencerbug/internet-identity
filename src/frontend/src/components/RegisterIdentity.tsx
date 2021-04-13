@@ -1,5 +1,6 @@
 import * as React from "react";
 import actor from "../utils/actor";
+import BigNumber from "bignumber.js";
 
 interface Props {}
 
@@ -15,15 +16,8 @@ function RegisterIdentity(props: Props) {
     const registerAlias = target.querySelector(
       "#registerAlias"
     ) as HTMLInputElement;
-    const registerPublicKey = target.querySelector(
-      "#registerPublicKey"
-    ) as HTMLInputElement;
 
-    actor.register(
-      BigInt(registerUser.value),
-      registerAlias.value,
-      registerPublicKey.value.split(",").map((num) => Number(num))
-    );
+    actor.register(BigInt(registerUser.value), registerAlias.value);
 
     return false;
   };
@@ -39,15 +33,7 @@ function RegisterIdentity(props: Props) {
         Alias (expects a string)
         <input type="text" name="registerAlias" id="registerAlias" required />
       </label>
-      <label htmlFor="registerPublicKey">
-        Public Key (expects a comma-separated list of numbers)
-        <input
-          type="text"
-          name="registerPublicKey"
-          id="registerPublicKey"
-          required
-        />
-      </label>
+
       <button type="submit" id="register-identity">
         Register Identity
       </button>

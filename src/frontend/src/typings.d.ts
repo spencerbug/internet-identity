@@ -39,7 +39,7 @@ export default interface _SERVICE {
   http_request: (arg_0: HttpRequest) => Promise<HttpResponse>;
   lookup: (
     arg_0: UserId
-  ) => Promise<Array<[Alias, PublicKey, [] | [CredentialId]]>>;
+  ) => Promise<Array<[Alias, PublicKey, Timestamp, [] | [CredentialId]]>>;
   register: (
     arg_0: UserId,
     arg_1: Alias,

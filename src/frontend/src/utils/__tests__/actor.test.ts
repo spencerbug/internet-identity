@@ -1,5 +1,21 @@
+import { WebAuthnIdentity } from "@dfinity/identity";
+import { hexEncodeUintArray } from "@dfinity/authentication";
 import { testGlobal } from "../../../../../setupTests";
 import { IDPActor } from "../actor";
+import { PublicKey } from "../../typings";
+import { JsonnableEd25519KeyIdentity } from "@dfinity/identity/lib/cjs/identity/ed25519";
+
+jest.mock("@dfinity/identity");
+jest.mock("../handleAuthentication", () => {
+  return {
+    authenticate: jest.fn(() => {
+      return {
+        publicKey: "asdf",
+      };
+    }),
+  };
+});
+
 const { mockActor } = testGlobal;
 describe("Actor Interface", () => {
   const testUser = BigInt(1234);
@@ -32,7 +48,7 @@ describe("Actor Interface", () => {
     );
   });
 
-  it("should handle adding a new identity", () => {
+  it.only("should handle adding a new identity", () => {
     const actor = new IDPActor();
     const shouldNotThrow = async () =>
       await actor.add(testUser, testAlias, testPublicKey);
@@ -50,6 +66,7 @@ describe("Actor Interface", () => {
     const shouldNotThrow = async () =>
       await actor.add(testUser, testAlias, testPublicKey, testCredential);
     expect(shouldNotThrow).not.toThrow();
+    mockActor.add; //?
     expect(mockActor.add).toBeCalledWith(
       BigInt(1234),
       "my desktop",

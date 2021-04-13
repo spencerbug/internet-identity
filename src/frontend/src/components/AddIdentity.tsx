@@ -11,15 +11,8 @@ function AddIdentity(props: Props) {
     const target = e.target as HTMLFormElement;
     const addUser = target.querySelector("#addUser") as HTMLInputElement;
     const addAlias = target.querySelector("#addAlias") as HTMLInputElement;
-    const addPublicKey = target.querySelector(
-      "#addPublicKey"
-    ) as HTMLInputElement;
 
-    actor.add(
-      BigInt(addUser.value),
-      addAlias.value,
-      addPublicKey.value.split(",").map((num) => Number(num))
-    );
+    actor.add(BigInt(addUser.value), addAlias.value);
 
     return false;
   };
@@ -34,10 +27,6 @@ function AddIdentity(props: Props) {
       <label htmlFor="addAlias">
         Alias (expects a string)
         <input type="text" name="addAlias" id="addAlias" required />
-      </label>
-      <label htmlFor="addPublicKey">
-        Public Key (expects a comma-separated list of numbers)
-        <input type="text" name="addPublicKey" id="addPublicKey" required />
       </label>
       <button type="submit" id="add-identity">
         Add Identity
