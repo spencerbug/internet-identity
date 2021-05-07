@@ -65,7 +65,9 @@ const init = (): Promise<LoginResult | null> =>
       await tick();
 
       try {
+        console.log("spawning");
         const pendingIdentity = WebAuthnIdentity.create().catch((error) => {
+          console.log("Error", error);
           resolve(apiResultToLoginResult({ kind: "authFail", error }));
           // We can never get here, but TS doesn't understand that
           return 0 as any;
@@ -74,7 +76,9 @@ const init = (): Promise<LoginResult | null> =>
         // Do PoW before registering.
         const now_in_ns = BigInt(Date.now()) * BigInt(1000000);
         const pow = getProofOfWork(now_in_ns, canisterIdPrincipal);
+        console.log("Awaiting");
         const identity = await pendingIdentity;
+        console.log("Identity", identity);
         if (await confirmRegister()) {
           // Send values through actor
           const result = await withLoader(async () =>

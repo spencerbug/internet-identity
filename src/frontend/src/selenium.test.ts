@@ -239,7 +239,7 @@ async function on_CompatibilityNotice(driver: ThenableWebDriver) {
 ## Setup helpers
 */
 
-async function addVirtualAuthenticator(driver: ThenableWebDriver) {
+async function addVirtualAuthenticator(driver: ThenableWebDriver, consenting = true) : Promise<string> {
     const executor = driver.getExecutor();
     const sessionId = (await driver.getSession()).getId();
     executor.defineCommand("AddVirtualAuthenticator", "POST", "/session/:sessionId/webauthn/authenticator");
@@ -247,8 +247,19 @@ async function addVirtualAuthenticator(driver: ThenableWebDriver) {
     cmd.setParameter('protocol', 'ctap2');
     cmd.setParameter('transport', 'usb');
     cmd.setParameter('hasResidentKey', true);
-    cmd.setParameter('isUserConsenting', true);
+    cmd.setParameter('isUserConsenting', consenting);
     cmd.setParameter('sessionId', sessionId);
+    const success = await executor.execute(cmd);
+    return success.authenticatorId;
+}
+
+async function removeVirtualAuthenticator(authenticatorId: string, driver: ThenableWebDriver) {
+    const executor = driver.getExecutor();
+    const sessionId = (await driver.getSession()).getId();
+    executor.defineCommand("RemoveVirtualAuthenticator", "POST", "/session/:sessionId/webauthn/authenticator/:authenticatorId");
+    const cmd = new Command('RemoeVirtualAuthenticator');
+    cmd.setParameter('sessionId', sessionId);
+    cmd.setParameter('authenticatorId', authenticatorId);
     await executor.execute(cmd);
 }
 
@@ -281,8 +292,8 @@ async function run_in_nested_browser(test) {
 async function run_in_browser_common(outer, test) {
     const driver = new Builder().forBrowser('chrome')
         .setChromeOptions(new ChromeOptions()
-          .headless() // hides the click show: uncomment to watch it
-          .windowSize({width: 1024, height: 768})
+          // .headless() // hides the click show: uncomment to watch it
+          // .windowSize({width: 1024, height: 768})
         )
         .setLoggingPrefs(new logging.Preferences().setLevel('browser', 'all'))
         .build();
@@ -390,7 +401,7 @@ test('Log into client application, after registration', async () => {
     })
 }, 300_000);
 
-test('Screenshots', async () => {
+test('Screenshots: Common', async () => {
     await run_in_browser(async (driver) => {
         await addVirtualAuthenticator(driver);
         await driver.get(IDP_URL);
@@ -527,3 +538,18 @@ test('Screenshots', async () => {
 }, 300_000);
 
 
+test('Screenshots: Not consenting', async () => {
+    await run_in_browser(async (driver) => {
+        await addVirtualAuthenticator(driver, false);
+        await driver.get(IDP_URL);
+        await wait_for_fonts(driver);
+
+        await on_Welcome(driver);
+        await on_Welcome_Register(driver);
+        await on_Register(driver);
+        await on_Register_TypeAliasEnter(DEVICE_NAME1, driver);
+        await on_RegisterConfirm(driver);
+        await on_RegisterConfirm_Confirm(driver);
+        const userNumber = await on_RegisterShowNumber(driver);
+    })
+}, 300_000);
