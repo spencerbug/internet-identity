@@ -32,7 +32,7 @@ The Internet Identity service allows users to
 
 Some functional requirements are
 
- * users have separate identities per client application (more precisely, per client application frontend "hostname")
+ * users have separate identities per client application (more precisely, per client application frontend "hostname"); should this read "pseudonyms"?
  * these identities are stable, i.e., do not depend on a user's security devices
  * the client frontends interact with any canister on the Internet Computer under the user’s identity with that frontend
  * users do not need ever to remember secret information (but possibly per-user non-secret information)
@@ -41,7 +41,7 @@ Some functional requirements are
 Some security requirements are
 
 * The separate identities of a single user cannot be related merely based on their public key or principal ids, to impede user tracking.
-* The security of the identities does not depend on the privacy of data stored on canisters, or transmitted to and from canisters. In particular, the delegations handed out by the backend canister must not be sensitive information.
+* The security of the identities does not depend on the privacy of data stored on canisters, or transmitted to and from canisters. In particular, the delegations handed out by the backend canister must not be sensitive information.; don't understand
 * (many more, of course; apply common sense)
 
 Some noteworthy security assumptions are:
@@ -66,7 +66,7 @@ The canister maintains a salt (in the following the `salt`), a 32 byte long blob
 
 NOTE: Due to replication of data in canisters, the salt should not be considered secret against a determined attacker. However, the canister will not reveal the salt directly and to the extent it is unknown to an attacker it helps maintain privacy of user identities.
 
-A user account is identified by a unique _Identity Anchor_, a smallish natural number chosen by the canister.
+A user account -- on II, not the pseudonyms -- is identified by a unique _Identity Anchor_, a smallish natural number chosen by the canister.
 
 A client application frontend is identified by its hostname (e.g., `abcde-efg.ic0.app`, `nice-name.ic0.app`, `non-ic-application.com`). Frontend application can be served by canisters or by websites that are not hosted on the Internet
 Computer.
@@ -113,7 +113,7 @@ If using an `<iframe>`, include `allow = "publickey-credentials-get"`, as per ht
 where `msg` is
 
   interface InternetIdentityReady {
-    kind: "authorize-ready"
+    kind: "authorize-ready" // why do they all have a "kind"?
   }
 --
 5. The client application, after receiving the `InternetIdentityReady`, invokes
@@ -126,7 +126,7 @@ where `msg` is a value with of type
  interface InternetIdentityAuthRequest {
    kind: "authorize-client";
    sessionPublicKey: Uint8Array;
-   maxTimeToLive?: bigint;
+   maxTimeToLive?: bigint; // as seconds?
  }
 
 where
@@ -134,7 +134,7 @@ where
 * the `sessionPublicKey` contains the public key of the session key pair.
 * the `maxTimeToLive`, if present, indicates the desired time span until the requested delegation should expire. The Identity Provider frontend is free to set an earlier expiry time, but should not create a larger.
 --
-6. Now it expects a message back, with data `event`.
+6. Now the client application window expects a message back, with data `event`.
 7. If `event.origin !== "https://identity.ic0.app"`, ignore this message.
 8. The `event.data` value is a JS object with the following type:
 +
