@@ -35,36 +35,37 @@ const pageContent = (userIntent: UserIntent) => html` <style>
       height: 2rem;
     }
   </style>
-  <div class="container">
-    ${icLogo}
-    <h2 id="loginWelcome">Welcome to<br />Internet Identity</h2>
-    <p>
+  <div class="container mx-auto mt-20 w-10/12 max-w-md rounded border-2 border-gray-300 p-8 space-y-3">
+    <div class="w-5/6 mx-auto">${icLogo}</div>
+    <h2 id="loginWelcome" class="font-bold text-3xl">Welcome to<br />Internet Identity</h2>
+    <p class="font-extralight">
       Provide an Identity Anchor to
       authenticate${authenticateUnknownIntent(userIntent)}.
     </p>
     <input
+        class="border-2 border-gray-300 py-1 px-2 w-full rounded text-xl"
       type="text"
       id="registerUserNumber"
       placeholder="Enter Identity Anchor"
     />
-    <button type="button" id="loginButton" class="primary">Authenticate</button>
+    <button type="button" id="loginButton" class="w-full bg-gray-900 text-gray-200 py-1 px-2 rounded text-xl">Authenticate</button>
     ${userIntent.kind === "addDevice"
       ? html`<div class="spacer"></div>`
       : html`<div class="textLink" id="registerSection">
             New?
-            <button id="registerButton" class="linkStyle">
+            <button id="registerButton" class="font-semibold">
               Create an Internet Identity Anchor.
             </button>
           </div>
           <div class="textLink">
             Already have an anchor
-            <button id="addNewDeviceButton" class="linkStyle">
+            <button id="addNewDeviceButton" class="font-semibold">
               but using a new device?
             </button>
           </div>
           <div class="textLink">
             Lost access
-            <button id="recoverButton" class="linkStyle">
+            <button id="recoverButton" class="font-semibold">
               and want to recover?
             </button>
           </div>`}
