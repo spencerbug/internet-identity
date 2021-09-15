@@ -9,9 +9,10 @@
     "generate:js": "didc bind ./src/internet_identity/internet_identity.did -t js > src/frontend/generated/internet_identity_idl.js",
     "build": "NODE_ENV=production webpack",
     "test": "jest --verbose",
+    "test:safari": "BROWSER=safari npm run test",
     "lint": "eslint --cache --cache-location node_modules/.cache/eslint 'src/frontend/**/*.ts*'",
     "format": "prettier --write src/frontend",
-    "install-webdrivers" : "selenium-standalone install"
+    "install-webdrivers": "selenium-standalone install"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.14.1",

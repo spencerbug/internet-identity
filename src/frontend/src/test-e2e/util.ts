@@ -2,17 +2,108 @@ import { remote } from "webdriverio";
 import { command } from "webdriver";
 import * as SeleniumStandalone from "selenium-standalone";
 import { ChildProcess } from "selenium-standalone";
+import { RemoteCapability } from "@wdio/types/build/Capabilities";
 
 export async function runInBrowser(
-  test: (browser: WebdriverIO.Browser) => Promise<void>
+  test: (
+    browser: WebdriverIO.Browser,
+    runConfig: RunConfiguration
+  ) => Promise<void>
 ): Promise<void> {
   await runInBrowserCommon(true, test);
 }
 
 export async function runInNestedBrowser(
-  test: (browser: WebdriverIO.Browser) => Promise<void>
+  test: (
+    browser: WebdriverIO.Browser,
+    runConfig: RunConfiguration
+  ) => Promise<void>
 ): Promise<void> {
   await runInBrowserCommon(false, test);
+}
+
+export async function runInBrowserCommon(
+  outer: boolean,
+  test: (
+    browser: WebdriverIO.Browser,
+    runConfig: RunConfiguration
+  ) => Promise<void>
+): Promise<void> {
+  const runConfig = parseRunConfiguration();
+  let webdriverProcess;
+  if (outer) {
+    webdriverProcess = await startWebdriver();
+  }
+
+  const browser = await remote({
+    capabilities: getBrowserCapabilities(runConfig),
+    automationProtocol: "webdriver",
+    path: "/wd/hub",
+    logLevel: "warn",
+  });
+
+  // setup test suite
+  await addCustomCommands(browser);
+
+  try {
+    // run test
+    await test(browser, runConfig);
+  } catch (e) {
+    console.log(await browser.getPageSource());
+    console.error(e);
+    throw e;
+  } finally {
+    if (outer) {
+      // only close outer session
+      await browser.deleteSession();
+      webdriverProcess?.kill();
+    }
+  }
+}
+
+export type BrowserType = "chrome" | "safari";
+export type WebAuthnMockLevel = "virtualAuthenticator" | "codeMock";
+
+export interface RunConfiguration {
+  browserType: BrowserType;
+  webAuthnMockLevel: WebAuthnMockLevel;
+}
+
+export function parseRunConfiguration(): RunConfiguration {
+  switch (process.env.BROWSER) {
+    case "safari":
+      // safaridriver --enable
+      return {
+        browserType: "safari",
+        webAuthnMockLevel: "codeMock",
+      };
+    default:
+      console.warn(
+        'no "process.env.BROWSER" specified, using default "chrome"'
+      );
+      return {
+        browserType: "chrome",
+        webAuthnMockLevel: "codeMock",
+      };
+  }
+}
+
+export function getBrowserCapabilities(
+  runConfig: RunConfiguration
+): RemoteCapability {
+  switch (runConfig.browserType) {
+    case "safari":
+      return {
+        browserName: "safari",
+      };
+    default:
+      return {
+        browserName: "chrome",
+        "goog:chromeOptions": {
+          args: ["--headless", "--disable-gpu", "--window-size=1050,1400"],
+        },
+      };
+  }
 }
 
 export async function startWebdriver(): Promise<ChildProcess | undefined> {
@@ -37,45 +128,6 @@ export async function startWebdriver(): Promise<ChildProcess | undefined> {
     console.error(error);
   }
   return webdriverProcess;
-}
-
-export async function runInBrowserCommon(
-  outer: boolean,
-  test: (browser: WebdriverIO.Browser) => Promise<void>
-): Promise<void> {
-  let webdriverProcess;
-  if (outer) {
-    webdriverProcess = await startWebdriver();
-  }
-
-  const browser = await remote({
-    capabilities: {
-      browserName: "chrome",
-      "goog:chromeOptions": {
-        args: ["--headless", "--disable-gpu", "--window-size=1050,1400"],
-      },
-    },
-    automationProtocol: "webdriver",
-    path: "/wd/hub",
-  });
-
-  // setup test suite
-  await addCustomCommands(browser);
-
-  try {
-    // run test
-    await test(browser);
-  } catch (e) {
-    console.log(await browser.getPageSource());
-    console.error(e);
-    throw e;
-  } finally {
-    if (outer) {
-      // only close outer session
-      await browser.deleteSession();
-      webdriverProcess?.kill();
-    }
-  }
 }
 
 export async function addCustomCommands(
@@ -143,14 +195,33 @@ export async function addCustomCommands(
 }
 
 export async function addVirtualAuthenticator(
-  browser: WebdriverIO.Browser
+  browser: WebdriverIO.Browser,
+  webAuthnMockLevel: WebAuthnMockLevel
 ): Promise<string> {
-  return await browser.addVirtualWebAuth("ctap2", "usb", true, true);
+  switch (webAuthnMockLevel) {
+    case "virtualAuthenticator":
+      return await browser.addVirtualWebAuth("ctap2", "usb", true, true);
+    case "codeMock":
+      // TODO: implement better mock
+      await browser.execute(`
+          CredentialsContainer.prototype.create = () => {
+            alert('mock create credentials');
+            return new Promise((resolve)=>resolve());
+          };
+          CredentialsContainer.prototype.get = () => {
+            alert('mock get credentials');
+            return new Promise((resolve)=>resolve());
+          };
+          return "successfully mocked webauthn";
+      `);
+      return "foobar";
+  }
 }
 
 export async function removeVirtualAuthenticator(
   browser: WebdriverIO.Browser,
-  authenticatorId: string
+  authenticatorId: string,
+  webAuthnMockLevel: WebAuthnMockLevel
 ): Promise<void> {
   return await browser.removeVirtualWebAuth(authenticatorId);
 }
@@ -179,13 +250,14 @@ export async function waitForFonts(
 }
 
 export async function switchToPopup(
-  browser: WebdriverIO.Browser
+  browser: WebdriverIO.Browser,
+  webAuthnMockLevel: WebAuthnMockLevel
 ): Promise<void> {
   const handles = await browser.getWindowHandles();
   expect(handles.length).toBe(2);
   await browser.switchToWindow(handles[1]);
   // enable virtual authenticator in the new window
-  await addVirtualAuthenticator(browser);
+  await addVirtualAuthenticator(browser, webAuthnMockLevel);
 }
 
 export async function waitToClose(browser: WebdriverIO.Browser): Promise<void> {

@@ -42,13 +42,11 @@ const DEVICE_NAME1 = "Virtual WebAuthn device";
 const DEVICE_NAME2 = "Other WebAuthn device";
 
 test("_Register new identity and login with it", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
+  await runInBrowser(async (browser, runConfig) => {
     await browser.url(II_URL);
     const welcomeView = new WelcomeView(browser);
     await welcomeView.waitForDisplay();
-    await welcomeView.register();
-    await addVirtualAuthenticator(browser);
-    await browser.url(II_URL);
+    await addVirtualAuthenticator(browser, runConfig.webAuthnMockLevel);
     const userNumber = await FLOWS.registerNewIdentity(DEVICE_NAME1, browser);
     const mainView = new MainView(browser);
     await mainView.waitForDeviceDisplay(DEVICE_NAME1);
@@ -58,8 +56,11 @@ test("_Register new identity and login with it", async () => {
 }, 300_000);
 
 test("Register new identity and add additional device", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
-    const firstAuthenticator = await addVirtualAuthenticator(browser);
+  await runInBrowser(async (browser, runConfig) => {
+    const firstAuthenticator = await addVirtualAuthenticator(
+      browser,
+      runConfig.webAuthnMockLevel
+    );
     await browser.url(II_URL);
     const userNumber = await FLOWS.registerNewIdentity(DEVICE_NAME1, browser);
 
@@ -68,8 +69,12 @@ test("Register new identity and add additional device", async () => {
     // We're removing the first authenticator here, because unfortunately we
     // can't tell Chrome to _actually_ use the second authenticator, which
     // leads to flaky tests otherwise.
-    await removeVirtualAuthenticator(browser, firstAuthenticator);
-    await addVirtualAuthenticator(browser);
+    await removeVirtualAuthenticator(
+      browser,
+      firstAuthenticator,
+      runConfig.webAuthnMockLevel
+    );
+    await addVirtualAuthenticator(browser, runConfig.webAuthnMockLevel);
     await mainView.addAdditionalDevice();
 
     const addDeviceAliasView = new AddDeviceAliasView(browser);
@@ -88,14 +93,14 @@ test("Register new identity and add additional device", async () => {
 }, 300_000);
 
 test("Log into client application, after registration", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
-    await addVirtualAuthenticator(browser);
+  await runInBrowser(async (browser, runConfig) => {
+    await addVirtualAuthenticator(browser, runConfig.webAuthnMockLevel);
     const demoAppView = new DemoAppView(browser);
     await demoAppView.open(DEMO_APP_URL, II_URL);
     await demoAppView.waitForDisplay();
     expect(await demoAppView.getPrincipal()).toBe("2vxsx-fae");
     await demoAppView.signin();
-    await switchToPopup(browser);
+    await switchToPopup(browser, runConfig.webAuthnMockLevel);
     await FLOWS.registerNewIdentity(DEVICE_NAME1, browser);
     const authorizeAppView = new AuthorizeAppView(browser);
     await authorizeAppView.waitForDisplay();
@@ -114,15 +119,15 @@ test("Log into client application, after registration", async () => {
 }, 300_000);
 
 test("Delegation maxTimeToLive: 1 min", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
-    await addVirtualAuthenticator(browser);
+  await runInBrowser(async (browser, runConfig) => {
+    await addVirtualAuthenticator(browser, runConfig.webAuthnMockLevel);
     const demoAppView = new DemoAppView(browser);
     await demoAppView.open(DEMO_APP_URL, II_URL);
     await demoAppView.waitForDisplay();
     expect(await demoAppView.getPrincipal()).toBe("2vxsx-fae");
     await demoAppView.setMaxTimeToLive(BigInt(60_000_000_000));
     await demoAppView.signin();
-    await switchToPopup(browser);
+    await switchToPopup(browser, runConfig.webAuthnMockLevel);
     await FLOWS.registerNewIdentity(DEVICE_NAME1, browser);
     const authorizeAppView = new AuthorizeAppView(browser);
     await authorizeAppView.waitForDisplay();
@@ -137,15 +142,15 @@ test("Delegation maxTimeToLive: 1 min", async () => {
 }, 300_000);
 
 test("Delegation maxTimeToLive: 1 day", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
-    await addVirtualAuthenticator(browser);
+  await runInBrowser(async (browser, runConfig) => {
+    await addVirtualAuthenticator(browser, runConfig.webAuthnMockLevel);
     const demoAppView = new DemoAppView(browser);
     await demoAppView.open(DEMO_APP_URL, II_URL);
     await demoAppView.waitForDisplay();
     expect(await demoAppView.getPrincipal()).toBe("2vxsx-fae");
     await demoAppView.setMaxTimeToLive(BigInt(86400_000_000_000));
     await demoAppView.signin();
-    await switchToPopup(browser);
+    await switchToPopup(browser, runConfig.webAuthnMockLevel);
     await FLOWS.registerNewIdentity(DEVICE_NAME1, browser);
     const authorizeAppView = new AuthorizeAppView(browser);
     await authorizeAppView.waitForDisplay();
@@ -158,15 +163,15 @@ test("Delegation maxTimeToLive: 1 day", async () => {
 }, 300_000);
 
 test("Delegation maxTimeToLive: 1 month", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
-    await addVirtualAuthenticator(browser);
+  await runInBrowser(async (browser, runConfig) => {
+    await addVirtualAuthenticator(browser, runConfig.webAuthnMockLevel);
     const demoAppView = new DemoAppView(browser);
     await demoAppView.open(DEMO_APP_URL, II_URL);
     await demoAppView.waitForDisplay();
     expect(await demoAppView.getPrincipal()).toBe("2vxsx-fae");
     await demoAppView.setMaxTimeToLive(BigInt(2592000_000_000_000));
     await demoAppView.signin();
-    await switchToPopup(browser);
+    await switchToPopup(browser, runConfig.webAuthnMockLevel);
     await FLOWS.registerNewIdentity(DEVICE_NAME1, browser);
     const authorizeAppView = new AuthorizeAppView(browser);
     await authorizeAppView.waitForDisplay();
@@ -180,8 +185,8 @@ test("Delegation maxTimeToLive: 1 month", async () => {
 }, 300_000);
 
 test("Recover access, after registration", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
-    await addVirtualAuthenticator(browser);
+  await runInBrowser(async (browser, runConfig) => {
+    await addVirtualAuthenticator(browser, runConfig.webAuthnMockLevel);
     await browser.url(II_URL);
     const userNumber = await FLOWS.registerNewIdentity(DEVICE_NAME1, browser);
     const mainView = new MainView(browser);
@@ -204,8 +209,8 @@ test("Recover access, after registration", async () => {
 }, 300_000);
 
 test("Screenshots", async () => {
-  await runInBrowser(async (browser: WebdriverIO.Browser) => {
-    await addVirtualAuthenticator(browser);
+  await runInBrowser(async (browser, runConfig) => {
+    await addVirtualAuthenticator(browser, runConfig.webAuthnMockLevel);
     await browser.url(II_URL);
 
     await waitForFonts(browser);
@@ -263,8 +268,8 @@ test("Screenshots", async () => {
     await mainView.waitForDeviceDisplay(DEVICE_NAME1);
 
     // Now the link device flow, using a second browser
-    await runInNestedBrowser(async (browser2: WebdriverIO.Browser) => {
-      await addVirtualAuthenticator(browser2);
+    await runInNestedBrowser(async (browser2, runConfig) => {
+      await addVirtualAuthenticator(browser2, runConfig.webAuthnMockLevel);
       await browser2.url(II_URL);
       const welcomeView2 = new WelcomeView(browser2);
       await welcomeView2.waitForDisplay();
