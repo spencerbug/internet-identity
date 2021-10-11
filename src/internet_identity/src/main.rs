@@ -249,6 +249,22 @@ async fn init_salt() {
 }
 
 #[update]
+async fn foo(n: u32) -> () {
+    for _ in 0 .. n {
+
+        let data = ByteBuf::from([]);
+
+        let dd = DeviceData { pubkey: data, alias: "test device".to_string(), credential_id: None, purpose: Purpose::Recovery, key_type: KeyType::Unknown };
+        let pow = ProofOfWork { timestamp: 0, nonce: 0 };
+
+        register(dd, pow).await;
+
+    }
+
+
+}
+
+#[update]
 async fn register(device_data: DeviceData, pow: ProofOfWork) -> RegisterResponse {
     check_entry_limits(&device_data);
     let now = time() as u64;
